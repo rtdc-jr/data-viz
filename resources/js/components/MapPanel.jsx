@@ -1,58 +1,96 @@
 import ReactECharts from "echarts-for-react";
-import { Card } from "antd";
 import * as echarts from "echarts";
 import worldJson from "../world.json";
 
 echarts.registerMap("world", worldJson);
 
-const MapPanel = ({ mapData, filters, topCauses }) => {
+const MapPanel = ({ mapData }) => {
+  const option = {
+  backgroundColor: "transparent",
 
-  const mapOption = {
-    title: {
-      text: "Global Death Distribution",
-      left: "center"
-    },
-    tooltip: { trigger: "item" },
-    visualMap: {
-      min: 0,
-      max: 1000000,
-      left: "left",
-      bottom: 20,
-      text: ["High", "Low"],
-      calculable: true
-    },
-    series: [{
-      type: "map",
+  tooltip: {
+    trigger: "item",
+    formatter: (params) => {
+      if (!params.value) return `${params.name}<br/>No data`;
+      return `${params.name}<br/>Deaths: ${params.value.toLocaleString()}`;
+    }
+  },
+
+  visualMap: {
+    min: 0,
+    max: 1000000,
+    left: 10,
+    bottom: 10,
+    itemWidth: 10,
+    itemHeight: 80,
+    text: ["High", "Low"],
+    calculable: true,
+    inRange: {
+      color: [
+        "#e0f2fe",
+        "#bae6fd",
+        "#7dd3fc",
+        "#38bdf8",
+        "#0ea5e9",
+        "#0369a1"
+      ]
+    }
+  },
+
+  // 🔥 THIS CONTROLS FULL SIZE MAP
+  geo: {
       map: "world",
       roam: true,
-      data: mapData.map(d => ({
-        name: d.country,
-        value: d.total
-      }))
-    }]
-  };
+
+      layoutCenter: ["50%", "50%"],
+      layoutSize: "130%",
+
+      // 🔥 THIS IS THE REAL FIX
+      boundingCoords: [
+        [-180, 90],
+        [180, -90]
+      ],
+
+      itemStyle: {
+        areaColor: "#e5e7eb",
+        borderColor: "#ffffff",
+        borderWidth: 0.5
+      },
+
+      emphasis: {
+        itemStyle: {
+          areaColor: "#0ea5e9"
+        }
+      }
+    },
+
+  series: [
+  {
+    type: "map",
+    map: "world",
+    coordinateSystem: "geo",
+
+    // 🔥 FORCE FIT
+    geoIndex: 0,
+
+    data: mapData.map((d) => ({
+      name: d.country,
+      value: d.total
+    }))
+  }
+]
+};
 
   return (
-    <div className="flex-1 p-4 flex flex-col">
-
-      <h2 className="text-lg font-semibold mb-2">
-        In {filters.year || "selected year"}, leading cause is{" "}
-        <span className="text-blue-600">
-          {topCauses[0]?.cause || "Loading..."}
-        </span>
-      </h2>
-
-      <div className="flex-1">
-        <Card className="h-full" bodyStyle={{ height: "100%" }}>
-
-          <ReactECharts
-            option={mapOption}
-            style={{ height: "100%", width: "100%" }}
-          />
-
-        </Card>
-      </div>
-
+    <div className="h-[50vh] w-full">
+      <ReactECharts
+        option={option}
+        style={{ height: "100%", width: "100%" }}
+        opts={{ renderer: "svg" }}
+        notMerge={true}
+        lazyUpdate={true}
+        autoResize={true}
+      />
     </div>
   );
 };
