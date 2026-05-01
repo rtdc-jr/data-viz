@@ -3,47 +3,180 @@
 import { Card, Progress, Spin } from "antd";
 import ReactECharts from "echarts-for-react";
 
-const RightPanel = ({ loading, topCauses, trends }) => {
+const RightPanel = ({ loading, topCauses, data  }) => {
   return (
     <div className="h-full flex flex-col p-4 space-y-4 overflow-auto">
 
-      <div className="flex justify-between items-center">
-        <h2 className="font-semibold text-lg">Top Causes of Death</h2>
-        <span className="text-blue-500 text-sm cursor-pointer">View all</span>
+     <div className="flex justify-between items-center">
+        <h2 className="font-semibold text-gray-800">
+          Top Causes of Death
+        </h2>
+        <span className="text-blue-500 text-sm cursor-pointer hover:underline">
+          View all
+        </span>
       </div>
 
       <Spin spinning={loading}>
 
-        <Card className="rounded-2xl">
-          <div className="space-y-3">
-            {topCauses.map((c, i) => (
-              <div key={i}>
-                <div className="flex justify-between text-sm mb-1">
-                  <span>{i + 1}. {c.cause}</span>
-                  <span>{c.total}</span>
-                </div>
-                <Progress percent={c.percent || 50} showInfo={false} />
-              </div>
-            ))}
-          </div>
-        </Card>
+        <Card className="rounded-3xl border border-gray-200 shadow-sm mb-3">
+            <div className="space-y-4">
 
-        <Card className="rounded-2xl">
-          <h3 className="mb-2 font-medium">Trends Over Time</h3>
-          <ReactECharts
-            option={{
-              tooltip: { trigger: "axis" },
-              xAxis: { type: "category", data: trends.map(d => d.year) },
-              yAxis: { type: "value" },
-              series: [{
-                type: "line",
-                smooth: true,
-                data: trends.map(d => d.total)
-              }]
-            }}
-            style={{ height: 220 }}
-          />
-        </Card>
+              {(() => {
+                // ✅ TOTAL of all causes
+                const totalSum = topCauses.reduce(
+                  (sum, c) => sum + (Number(c.total) || 0),
+                  0
+                );
+
+                return topCauses.map((c, i) => {
+                  const value = Number(c.total) || 0;
+
+                  // ✅ percentage based on TOTAL
+                  const percent = totalSum ? (value / totalSum) * 100 : 0;
+
+                  const colors = [
+                    "bg-purple-500",
+                    "bg-blue-500",
+                    "bg-teal-500",
+                    "bg-orange-400",
+                    "bg-yellow-400",
+                    "bg-indigo-400",
+                    "bg-sky-400",
+                    "bg-emerald-400"
+                  ];
+
+                  const icons = [
+                    "❤️",
+                    "🧠",
+                    "🫁",
+                    "🫁",
+                    "🧠",
+                    "💧",
+                    "💧",
+                    "🫀",
+                    "🫀",
+                    "🚗"
+                  ];
+
+                  const formatNumber = (num) => {
+                    if (!num) return "0";
+                    if (num >= 1e9) return (num / 1e9).toFixed(1) + "B";
+                    if (num >= 1e6) return (num / 1e6).toFixed(1) + "M";
+                    if (num >= 1e3) return (num / 1e3).toFixed(1) + "K";
+                    return num.toLocaleString();
+                  };
+
+                  return (
+                    <div key={i} className="space-y-1 ">
+
+                      {/* ROW */}
+                      <div className="flex items-center justify-between mb-4">
+
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="w-4 text-gray-400 text-sm">
+                            {i + 1}
+                          </span>
+
+                          <span className="text-lg leading-none">
+                            {icons[i]}
+                          </span>
+
+                          <span className="text-sm text-gray-700 truncate max-w-[150px]">
+                            {c.cause}
+                          </span>
+                        </div>
+
+                        {/* ✅ NOW CORRECT */}
+                        <div className="text-xs text-gray-500 shrink-0">
+                          {formatNumber(value)} ({percent.toFixed(1)}%)
+                        </div>
+                      </div>
+
+                      {/* ✅ BAR BASED ON TOTAL */}
+                      <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full ${colors[i % colors.length]}`}
+                          style={{
+                            width: `${percent}%`,
+                            minWidth: "6px" // keeps small ones visible
+                          }}
+                        />
+                      </div>
+
+                    </div>
+                  );
+                });
+              })()}
+
+              <button className="w-full mt-3 py-2 text-sm text-blue-500 hover:text-blue-600 transition">
+                View All Causes →
+              </button>
+
+            </div>
+          </Card>
+
+             <Card className="rounded-3xl border border-gray-200 shadow-sm p-2">
+                <h3 className="mb-4 font-medium text-gray-700">
+                  Top Countries by Deaths
+                </h3>
+
+                {(() => {
+                  if (!data || data.length === 0) return null;
+
+                  const sorted = [...data]
+                    .sort((a, b) => Number(b.total) - Number(a.total))
+                    .slice(0, 5);
+
+                  const max = sorted[0]?.total || 1;
+
+                  const formatNumber = (num) => {
+                    if (!num) return "0";
+                    if (num >= 1e9) return (num / 1e9).toFixed(1) + "B";
+                    if (num >= 1e6) return (num / 1e6).toFixed(1) + "M";
+                    if (num >= 1e3) return (num / 1e3).toFixed(1) + "K";
+                    return Number(num).toLocaleString();
+                  };
+
+                  return sorted.map((d, i) => {
+                    const percent = (Number(d.total) / max) * 100;
+
+                    return (
+                      <div key={i} className="mb-2">
+
+                        {/* ROW */}
+                        <div className="flex items-center justify-between mb-1">
+
+                          {/* LEFT */}
+                          <div className="flex items-center gap-2">
+
+                            {/* NAME */}
+                            <span className="text-sm text-gray-700">
+                              {d.country}
+                            </span>
+                          </div>
+
+                          {/* VALUE */}
+                          <span className="text-xs text-gray-500">
+                            {formatNumber(d.total)}
+                          </span>
+                        </div>
+
+                        {/* BAR */}
+                        <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-indigo-500"
+                            style={{
+                              width: `${percent}%`,
+                              minWidth: "6px"
+                            }}
+                          />
+                        </div>
+
+                      </div>
+                    );
+                  });
+                })()}
+              </Card>
 
       </Spin>
 

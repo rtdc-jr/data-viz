@@ -26,42 +26,45 @@ const Dashboard = () => {
   const [mapData, setMapData] = useState([]);
 
   const [loading, setLoading] = useState(false);
+  const [countries, setCountries] = useState([]);
+  const [appliedFilters, setAppliedFilters] = useState({});
 
   useEffect(() => {
     loadFilters();
     loadTrends();
   }, []);
 
-  useEffect(() => {
-    loadTopCauses();
-    loadMap();
-  }, [filters]);
+useEffect(() => {
+  loadTopCauses();
+  loadMap();
+}, [appliedFilters]);
 
   const loadFilters = async () => {
-    const res = await axios.get("/api/deaths/filters");
-    setYears(res.data.years);
-    setCauses(res.data.causes);
-  };
+  const res = await axios.get("/api/deaths/filters");
+  setYears(res.data.years);
+  setCauses(res.data.causes);
+  setCountries(res.data.countries);
+};
 
   const loadTopCauses = async () => {
-    setLoading(true);
-    const res = await axios.get("/api/deaths/top-causes", {
-      params: filters
-    });
-    setTopCauses(res.data);
-    setLoading(false);
-  };
+  setLoading(true);
+  const res = await axios.get("/api/deaths/top-causes", {
+    params: appliedFilters
+  });
+  setTopCauses(res.data);
+  setLoading(false);
+};
+
+const loadMap = async () => {
+  const res = await axios.get("/api/deaths/map", {
+    params: appliedFilters
+  });
+  setMapData(res.data);
+};
 
   const loadTrends = async () => {
     const res = await axios.get("/api/deaths/trends");
     setTrends(res.data);
-  };
-
-  const loadMap = async () => {
-    const res = await axios.get("/api/deaths/map", {
-      params: filters
-    });
-    setMapData(res.data);
   };
 
   const handleFilter = (key, value) => {
@@ -112,7 +115,8 @@ const Dashboard = () => {
           <LeftPanel
             years={years}
             causes={causes}
-            onFilter={handleFilter}
+            countries={countries}
+            onApply={setAppliedFilters}
           />
         </div>
       </Sider>
@@ -231,7 +235,7 @@ const Dashboard = () => {
           <RightPanel
             loading={loading}
             topCauses={topCauses}
-            trends={trends}
+            data={mapData}
           />
         </div>
       </Sider>
